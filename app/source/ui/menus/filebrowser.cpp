@@ -170,8 +170,9 @@ void FsView::Draw(NVGcontext* vg, Theme* theme) {
     }
 
     constexpr float text_xoffset{15.f};
+    bool got_dir_count = false;
 
-    m_list->Draw(vg, theme, m_entries_current.size(), [this, text_col](auto* vg, auto* theme, auto v, auto i) {
+    m_list->Draw(vg, theme, m_entries_current.size(), [this, text_col, &got_dir_count](auto* vg, auto* theme, auto v, auto i) {
         const auto& [x, y, w, h] = v;
         auto& e = GetEntry(i);
 
@@ -180,7 +181,8 @@ void FsView::Draw(NVGcontext* vg, Theme* theme) {
             // if (m_fs->IsNative() && e.file_count == -1 && e.dir_count == -1) {
             // NOTE: this takes longer than 16ms when opening a new folder due to it
             // checking all 9 folders at once.
-            if (e.file_count == -1 && e.dir_count == -1) {
+            if (!got_dir_count && e.file_count == -1 && e.dir_count == -1) {
+                got_dir_count = true;
                 m_fs->DirGetEntryCount(GetNewPath(e), &e.file_count, &e.dir_count);
             }
         } else if (!e.checked_extension) {
@@ -217,10 +219,13 @@ void FsView::Draw(NVGcontext* vg, Theme* theme) {
 
         m_scroll_name.Draw(vg, selected, x + text_xoffset+65, y + (h / 2.f), w-(75+text_xoffset+65+50), 20, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, theme->GetColour(text_id), e.name);
 
-        // NOTE: make this native only if i disable dir scan from above.
         if (e.IsDir()) {
-            gfx::drawTextArgs(vg, x + w - text_xoffset, y + (h / 2.f) - 3, 16.f, NVG_ALIGN_RIGHT | NVG_ALIGN_BOTTOM, theme->GetColour(text_id), "%zd files"_i18n.c_str(), e.file_count);
-            gfx::drawTextArgs(vg, x + w - text_xoffset, y + (h / 2.f) + 3, 16.f, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, theme->GetColour(text_id), "%zd dirs"_i18n.c_str(), e.dir_count);
+            if (e.file_count != -1) {
+                gfx::drawTextArgs(vg, x + w - text_xoffset, y + (h / 2.f) - 3, 16.f, NVG_ALIGN_RIGHT | NVG_ALIGN_BOTTOM, theme->GetColour(text_id), "%zd files"_i18n.c_str(), e.file_count);
+            }
+            if (e.dir_count != -1) {
+                gfx::drawTextArgs(vg, x + w - text_xoffset, y + (h / 2.f) + 3, 16.f, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP, theme->GetColour(text_id), "%zd dirs"_i18n.c_str(), e.dir_count);
+            }
         } else if (e.IsFile()) {
             if (!e.time_stamp.is_valid) {
                 const auto path = GetNewPath(e);
