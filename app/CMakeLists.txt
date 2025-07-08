@@ -154,7 +154,7 @@ FetchContent_Declare(lz4
 
 FetchContent_Declare(core
     GIT_REPOSITORY https://github.com/ITotalJustice/TotalSMS.git
-    GIT_TAG 80be960
+    GIT_TAG 309c224
 )
 
 set(SMS_SINGLE_FILE ON)
